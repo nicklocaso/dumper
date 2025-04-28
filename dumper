@@ -2,7 +2,7 @@
 #
 # dumper - Simple project context and file extractor
 #
-# Version: 0.6.5
+# Version: 0.6.6
 # Author: Nicola Lo Caso <nicklocaso>
 #
 # This script is licensed under the MIT License.
@@ -207,6 +207,13 @@ for FILE in "${NEW_ARGS[@]}"; do
 done
 
 echo "File created: $OUTPUT_FILE"
+
+# Estimate token count
+if [ -f "$OUTPUT_FILE" ]; then
+    CHAR_COUNT=$(wc -m < "$OUTPUT_FILE")
+    ESTIMATED_TOKENS=$((CHAR_COUNT / 4))
+    echo "Estimated token count: approximately $ESTIMATED_TOKENS tokens (based on character count)."
+fi
 
 # Open the generated file with VS Code if enabled
 if [ "$OPEN_WITH_VSCODE" = true ]; then
