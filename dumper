@@ -1,5 +1,7 @@
 #!/bin/bash
+#
 # dumper - Simple project context and file extractor
+#
 # Version: 0.6.5
 # Author: Nicola Lo Caso <nicklocaso>
 #
@@ -52,6 +54,18 @@ print_help() {
     echo "  --help              Show this help message"
     exit 0
 }
+
+# Check if 'tree' is installed if needed
+if [ "$TREE_DEPTH" -gt 0 ] && [ "$GENERATE_TREE" = true ]; then
+    if ! command -v tree &>/dev/null; then
+        echo "Error: 'tree' command not found."
+        echo "Please install it with:"
+        echo "  sudo apt install tree      # Debian/Ubuntu"
+        echo "  brew install tree          # macOS (Homebrew)"
+        echo "  sudo yum install tree      # RHEL/CentOS"
+        exit 1
+    fi
+fi
 
 # Initialize context empty
 CONTEXT=""
