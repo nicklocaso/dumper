@@ -1,0 +1,228 @@
+#!/bin/bash
+# dumper - Simple project context and file extractor
+# Version: 0.6.5
+# Author: Nicola Lo Caso <nicklocaso>
+#
+# This script is licensed under the MIT License.
+#
+# Copyright (c) 2024 Nicola Lo Caso
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Configuration
+OUTPUT_FILE=".dumper.dump.md"
+OPEN_WITH_VSCODE=true      # If true, opens the file in VS Code
+COPY_TO_CLIPBOARD=true     # If true, copies the content to the clipboard
+INCLUDE_PACKAGE_JSON=true  # If true, includes package.json
+TREE_DEPTH=3               # If > 0, displays the directory structure up to this level
+GENERATE_TREE=true         # Control if tree output should be generated
+
+# Directories to exclude from the tree output
+EXCLUDED_DIRS=("node_modules" ".git" "dist" ".next" ".turbo" "generated")
+EXCLUDE_PATTERN=$(
+    IFS="|"
+    echo "${EXCLUDED_DIRS[*]}"
+)
+
+# Function to print help
+print_help() {
+    echo "Usage: $0 [context message] [file1 file2 ...] [options]"
+    echo ""
+    echo "Options:"
+    echo "  --no-tree           Disable project directory structure generation"
+    echo "  --no-package-json   Do not include package.json"
+    echo "  --no-open           Do not open the output file with VS Code"
+    echo "  --no-clipboard      Do not copy the output content to clipboard"
+    echo "  --help              Show this help message"
+    exit 0
+}
+
+# Initialize context empty
+CONTEXT=""
+NEW_ARGS=()
+
+# First loop to separate context from options
+for ARG in "$@"; do
+    case "$ARG" in
+        --no-tree)
+            GENERATE_TREE=false
+            ;;
+        --no-package-json)
+            INCLUDE_PACKAGE_JSON=false
+            ;;
+        --no-open)
+            OPEN_WITH_VSCODE=false
+            ;;
+        --no-clipboard)
+            COPY_TO_CLIPBOARD=false
+            ;;
+        --help)
+            print_help
+            ;;
+        *)
+            if [ -z "$CONTEXT" ]; then
+                CONTEXT="$ARG"
+            else
+                NEW_ARGS+=("$ARG")
+            fi
+            ;;
+    esac
+done
+
+# If context was not provided
+if [ -z "$CONTEXT" ]; then
+    CONTEXT="No context provided."
+fi
+
+# Write the context message to the output file
+echo "## Request" >"$OUTPUT_FILE"
+echo "$CONTEXT" >>"$OUTPUT_FILE"
+
+# Append TODO List to the output file
+echo "" >>"$OUTPUT_FILE"
+echo "## TODO List" >>"$OUTPUT_FILE"
+echo "- Carefully read the provided project context." >>"$OUTPUT_FILE"
+echo "- Analyze the current project directory structure." >>"$OUTPUT_FILE"
+echo "- Review the provided code files." >>"$OUTPUT_FILE"
+echo "- Identify if additional files are required to be reviewed. If so, specify them." >>"$OUTPUT_FILE"
+echo "- Determine if any new files need to be created. Specify file names and content outline." >>"$OUTPUT_FILE"
+echo "- Determine if any existing files need to be modified. Specify which files and summarize the changes." >>"$OUTPUT_FILE"
+echo "- Request that all answers and outputs are provided in the same language used in the Request section." >>"$OUTPUT_FILE"
+echo "- Summarize the next steps in a clear and executable action plan." >>"$OUTPUT_FILE"
+echo "- Format your response in plain text. Do not use emojis, emoticons, or decorative symbols. Keep the writing technical, clear, and direct." >>"$OUTPUT_FILE"
+
+
+# If TREE_DEPTH > 0 and GENERATE_TREE is true, display the directory structure
+if [ "$TREE_DEPTH" -gt 0 ] && [ "$GENERATE_TREE" = true ]; then
+    CURRENT_DIR=$(basename "$PWD") # Get current directory name
+    echo "" >>"$OUTPUT_FILE"
+    echo "## Project directory structure (level: $TREE_DEPTH)" >>"$OUTPUT_FILE"
+    echo "Directory name: \`$CURRENT_DIR\`" >>"$OUTPUT_FILE"
+    echo '```bash' >>"$OUTPUT_FILE"
+
+    # Print tree structure with exclusions
+    tree -aL "$TREE_DEPTH" -I "$EXCLUDE_PATTERN" -F --dirsfirst >>"$OUTPUT_FILE"
+
+    echo '```' >>"$OUTPUT_FILE"
+fi
+
+# Function to determine the language based on file extension
+get_language() {
+    local extension
+    extension=$(echo "$1" | tr '[:upper:]' '[:lower:]') # Convert to lowercase safely
+    case "$extension" in
+        js|cjs|mjs)
+            echo "javascript"
+            ;;
+        jsx)
+            echo "jsx"
+            ;;
+        ts)
+            echo "typescript"
+            ;;
+        tsx)
+            echo "tsx"
+            ;;
+        json)
+            echo "json"
+            ;;
+        sh|bash)
+            echo "bash"
+            ;;
+        ini)
+            echo "ini"
+            ;;
+        yml|yaml)
+            echo "yaml"
+            ;;
+        md)
+            echo "markdown"
+            ;;
+        html|htm)
+            echo "html"
+            ;;
+        css|scss)
+            echo "css"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+# Check if package.json should be included
+if [ "$INCLUDE_PACKAGE_JSON" = true ] && [ -f "package.json" ]; then
+    echo "" >>"$OUTPUT_FILE"
+    echo "## File: package.json" >>"$OUTPUT_FILE"
+    echo '```json' >>"$OUTPUT_FILE"
+    cat "package.json" >>"$OUTPUT_FILE"
+    echo '```' >>"$OUTPUT_FILE"
+fi
+
+# Loop through the provided files
+for FILE in "${NEW_ARGS[@]}"; do
+    if [ -f "$FILE" ]; then
+        # Extract the file extension
+        EXTENSION="${FILE##*.}"
+        LANGUAGE=$(get_language "$EXTENSION")
+
+        echo "" >>"$OUTPUT_FILE"
+        echo "## File: $FILE" >>"$OUTPUT_FILE"
+
+        if [ -n "$LANGUAGE" ]; then
+            echo "\`\`\`$LANGUAGE" >>"$OUTPUT_FILE"
+        else
+            echo "\`\`\`" >>"$OUTPUT_FILE"
+        fi
+
+        cat "$FILE" >>"$OUTPUT_FILE"
+        echo '```' >>"$OUTPUT_FILE"
+    else
+        echo "Warning: The file $FILE does not exist." >&2
+    fi
+done
+
+echo "File created: $OUTPUT_FILE"
+
+# Open the generated file with VS Code if enabled
+if [ "$OPEN_WITH_VSCODE" = true ]; then
+    if command -v code &>/dev/null; then
+        code "$OUTPUT_FILE"
+        echo "Opened $OUTPUT_FILE with VSCode."
+    else
+        echo "VS Code is not installed or 'code' command is not found."
+    fi
+fi
+
+# Try to copy the generated file content to clipboard if enabled
+if [ "$COPY_TO_CLIPBOARD" = true ]; then
+    if command -v pbcopy &>/dev/null; then
+        cat "$OUTPUT_FILE" | pbcopy
+        echo "Content copied to clipboard using pbcopy (macOS)."
+    elif command -v xclip &>/dev/null; then
+        cat "$OUTPUT_FILE" | xclip -selection clipboard
+        echo "Content copied to clipboard using xclip (Linux)."
+    elif command -v xsel &>/dev/null; then
+        cat "$OUTPUT_FILE" | xsel --clipboard --input
+        echo "Content copied to clipboard using xsel (Linux)."
+    else
+        echo "No clipboard utility found (pbcopy, xclip, or xsel). Cannot copy to clipboard."
+    fi
+fi
+
