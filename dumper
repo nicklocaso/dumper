@@ -111,16 +111,10 @@ echo "$CONTEXT" >>"$OUTPUT_FILE"
 # Append TODO List to the output file
 echo "" >>"$OUTPUT_FILE"
 echo "## TODO List" >>"$OUTPUT_FILE"
-echo "- Carefully read the provided project context." >>"$OUTPUT_FILE"
-echo "- Analyze the current project directory structure." >>"$OUTPUT_FILE"
-echo "- Review the provided code files." >>"$OUTPUT_FILE"
-echo "- Identify if additional files are required to be reviewed. If so, specify them." >>"$OUTPUT_FILE"
-echo "- Determine if any new files need to be created. Specify file names and content outline." >>"$OUTPUT_FILE"
-echo "- Determine if any existing files need to be modified. Specify which files and summarize the changes." >>"$OUTPUT_FILE"
-echo "- Request that all answers and outputs are provided in the same language used in the Request section." >>"$OUTPUT_FILE"
-echo "- Summarize the next steps in a clear and executable action plan." >>"$OUTPUT_FILE"
-echo "- Format your response in plain text. Do not use emojis, emoticons, or decorative symbols. Keep the writing technical, clear, and direct." >>"$OUTPUT_FILE"
-
+echo "- Read carefully the provided context and project structure." >>"$OUTPUT_FILE"
+echo "- Based on the context, decide autonomously the most appropriate actions." >>"$OUTPUT_FILE"
+echo "- If necessary, suggest improvements or next steps." >>"$OUTPUT_FILE"
+echo "- Keep all outputs technical, structured, and written in plain text." >>"$OUTPUT_FILE"
 
 # If TREE_DEPTH > 0 and GENERATE_TREE is true, display the directory structure
 if [ "$TREE_DEPTH" -gt 0 ] && [ "$GENERATE_TREE" = true ]; then
